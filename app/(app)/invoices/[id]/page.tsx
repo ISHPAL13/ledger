@@ -1,6 +1,7 @@
 import { access } from "fs/promises";
 import path from "path";
 import { AlertTriangle, CheckCircle2, FileWarning, RotateCcw } from "lucide-react";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,11 @@ function ConfidenceHint({ value }: { value: number | null }) {
   );
 }
 
+function isImageFile(fileName: string) {
+  const ext = path.extname(fileName).toLowerCase();
+  return ext === ".png" || ext === ".jpg" || ext === ".jpeg" || ext === ".webp";
+}
+
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
@@ -48,6 +54,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         .then(() => true)
         .catch(() => false)
     : false;
+  const imagePreview = isImageFile(invoice.fileName || invoice.fileUrl);
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -61,7 +68,19 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         </div>
         <div className="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50">
           {previewAvailable ? (
-            <iframe src={invoice.fileUrl} className="h-[900px] w-full bg-white" title={invoice.fileName} />
+            imagePreview ? (
+              <div className="flex min-h-[900px] items-center justify-center bg-white p-4">
+                <Image
+                  src={invoice.fileUrl}
+                  alt={invoice.fileName}
+                  width={1200}
+                  height={1600}
+                  className="max-h-[860px] w-auto max-w-full rounded-2xl object-contain"
+                />
+              </div>
+            ) : (
+              <iframe src={invoice.fileUrl} className="h-[900px] w-full bg-white" title={invoice.fileName} />
+            )
           ) : (
             <div className="flex h-[900px] flex-col items-center justify-center gap-3 bg-white px-6 text-center">
               <FileWarning className="h-10 w-10 text-amber-500" />

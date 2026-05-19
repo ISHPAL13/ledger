@@ -22,7 +22,7 @@ export default async function UploadPage({
         <div className="max-w-3xl">
           <h2 className="text-3xl font-bold text-slate-950">Upload client invoices</h2>
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            Select a client, choose invoice type, then upload PDFs. Talos Ledger stores them securely, creates invoice records, and starts Gemini extraction automatically.
+            Select a client, choose invoice type, then upload PDFs or click a fresh invoice picture. Talos Ledger stores them securely, creates invoice records, and starts Gemini extraction automatically.
           </p>
         </div>
       </Card>

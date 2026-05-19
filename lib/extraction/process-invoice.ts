@@ -4,6 +4,23 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/db/prisma";
 import { extractInvoiceWithGemini, extractTextFromPdf } from "@/lib/extraction/gemini";
 
+function getMimeType(fileName: string) {
+  const ext = path.extname(fileName).toLowerCase();
+  switch (ext) {
+    case ".pdf":
+      return "application/pdf";
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".webp":
+      return "image/webp";
+    default:
+      throw new Error("Unsupported invoice file type");
+  }
+}
+
 function toDecimal(value?: number | null) {
   return value === null || value === undefined ? null : new Decimal(value);
 }
@@ -23,9 +40,11 @@ export async function processInvoiceById(invoiceId: string) {
 
   const absolutePath = path.join(process.cwd(), "public", invoice.fileUrl.replace(/^\//, ""));
   const buffer = await readFile(absolutePath);
-  const extractedText = await extractTextFromPdf(buffer);
+  const mimeType = getMimeType(invoice.fileName || invoice.fileUrl);
+  const extractedText = mimeType === "application/pdf" ? await extractTextFromPdf(buffer) : "";
   const extraction = await extractInvoiceWithGemini({
-    pdfBuffer: buffer,
+    buffer,
+    mimeType,
     fallbackText: extractedText
   });
 

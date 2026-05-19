@@ -84,9 +84,13 @@ export async function extractTextFromPdf(buffer: Buffer) {
   return parsed.text?.trim() || "";
 }
 
-export async function extractInvoiceWithGemini(params: { pdfBuffer: Buffer; fallbackText?: string }) {
+export async function extractInvoiceWithGemini(params: {
+  buffer: Buffer;
+  mimeType: string;
+  fallbackText?: string;
+}) {
   const client = getClient();
-  const pdfBase64 = params.pdfBuffer.toString("base64");
+  const fileBase64 = params.buffer.toString("base64");
 
   const response = await client.models.generateContent({
     model,
@@ -104,8 +108,8 @@ export async function extractInvoiceWithGemini(params: { pdfBuffer: Buffer; fall
             : []),
           {
             inlineData: {
-              data: pdfBase64,
-              mimeType: "application/pdf"
+              data: fileBase64,
+              mimeType: params.mimeType
             }
           }
         ]

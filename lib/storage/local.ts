@@ -4,22 +4,24 @@ import { slugify } from "@/lib/utils";
 
 const uploadRoot = process.env.UPLOAD_DIR || "./public/uploads";
 
-export async function savePdfFile(params: {
+const allowedExtensions = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
+
+export async function saveInvoiceFile(params: {
   buffer: Buffer;
   firmId: string;
   clientId?: string | null;
   fileName: string;
 }) {
   const ext = path.extname(params.fileName).toLowerCase();
-  if (ext !== ".pdf") {
-    throw new Error("Only PDF files are supported");
+  if (!allowedExtensions.has(ext)) {
+    throw new Error("Only PDF, PNG, JPG, JPEG, and WEBP files are supported");
   }
 
   const dir = path.join(uploadRoot, params.firmId, params.clientId || "unassigned");
   await mkdir(dir, { recursive: true });
   const timestamp = Date.now();
   const cleanBase = slugify(path.basename(params.fileName, ext)) || "invoice";
-  const finalName = `${timestamp}-${cleanBase}.pdf`;
+  const finalName = `${timestamp}-${cleanBase}${ext}`;
   const destination = path.join(dir, finalName);
 
   await writeFile(destination, params.buffer);

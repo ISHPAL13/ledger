@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum ClientStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum InvoiceStatus {
+  PROCESSING
+  PENDING_REVIEW
+  COMPLETED
+  FAILED
+}
+
+enum InvoiceType {
+  PURCHASE
+  SALES
+  EXPENSE
+  OTHER
+}
+
+enum ExportType {
+  ALL_INVOICES
+  SELECTED_INVOICES
+  CLIENT_WISE
+  MONTH_WISE
+  GST_SUMMARY
+  PENDING_REVIEW
+  PURCHASE
+  SALES
+}
+
+model Firm {
+  id                        String        @id @default(cuid())
+  name                      String
+  ownerName                 String
+  email                     String        @unique
+  phone                     String?
+  address                   String?
+  gstNumber                 String?
+  panNumber                 String?
+  defaultFinancialYear      String        @default("FY 2025-26")
+  defaultExportFormat       String        @default("xlsx")
+  lowConfidenceThreshold    Float         @default(0.5)
+  autoApproveHighConfidence Boolean       @default(false)
+  logoUrl                   String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  users                     FirmUser[]
+  clients                   Client[]
+  invoices                  Invoice[]
+  exports                   ExportLog[]
+  activities                ActivityLog[]
+}
+
+model FirmUser {
+  id           String       @id @default(cuid())
+  firmId       String
+  fullName     String
+  email        String
+  passwordHash String
+  role         UserRole     @default(ADMIN)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  firm         Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  activities   ActivityLog[]
+
+  @@unique([firmId, email])
+}
+
+model Client {
+  id                String        @id @default(cuid())
+  firmId            String
+  businessName      String
+  contactPersonName String?
+  email             String?
+  phone             String?
+  gstNumber         String?
+  panNumber         String?
+  businessAddress   String?
+  city              String?
+  state             String?
+  pincode           String?
+  businessType      String?
+  notes             String?
+  status            ClientStatus  @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  firm              Firm          @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
+  gstSummaries      GSTSummary[]
+
+  @@index([firmId, businessName])
+  @@index([firmId, gstNumber])
+}
+
+model Invoice {
+  id                 String         @id @default(cuid())
+  firmId             String
+  clientId           String?
+  fileName           String
+  fileUrl            String
+  invoiceType        InvoiceType
+  status             InvoiceStatus  @default(PROCESSING)
+  vendorName         String?
+  buyerName          String?
+  supplierGstNumber  String?
+  buyerGstNumber     String?
+  invoiceNumber      String?
+  invoiceDate        DateTime?
+  dueDate            DateTime?
+  hsnCode            String?
+  itemDescription    String?
+  quantity           Decimal?       @db.Decimal(18, 3)
+  unitPrice          Decimal?       @db.Decimal(18, 2)
+  taxableAmount      Decimal?       @db.Decimal(18, 2)
+  cgst               Decimal?       @db.Decimal(18, 2)
+  sgst               Decimal?       @db.Decimal(18, 2)
+  igst               Decimal?       @db.Decimal(18, 2)
+  totalGst           Decimal?       @db.Decimal(18, 2)
+  roundOff           Decimal?       @db.Decimal(18, 2)
+  grandTotal         Decimal?       @db.Decimal(18, 2)
+  placeOfSupply      String?
+  reverseCharge      Boolean?
+  vehicleNumber      String?
+  lrNumber           String?
+  ewayBillNumber     String?
+  paymentTerms       String?
+  bankDetails        String?
+  confidenceJson     Json?
+  rawExtractedText   String?
+  extractionError    String?
+  processingLogs     Json?
+  notes              String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  firm               Firm           @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client             Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  items              InvoiceItem[]
+
+  @@index([firmId, status, invoiceDate])
+  @@index([firmId, clientId, invoiceType])
+  @@index([firmId, supplierGstNumber])
+}
+
+model InvoiceItem {
+  id            String   @id @default(cuid())
+  invoiceId     String
+  hsnCode       String?
+  description   String?
+  quantity      Decimal? @db.Decimal(18, 3)
+  unitPrice     Decimal? @db.Decimal(18, 2)
+  taxableAmount Decimal? @db.Decimal(18, 2)
+  cgst          Decimal? @db.Decimal(18, 2)
+  sgst          Decimal? @db.Decimal(18, 2)
+  igst          Decimal? @db.Decimal(18, 2)
+  total         Decimal? @db.Decimal(18, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model ExportLog {
+  id          String     @id @default(cuid())
+  firmId      String
+  requestedBy String?
+  exportType  ExportType
+  fileName    String
+  filtersJson Json?
+  createdAt   DateTime   @default(now())
+  firm        Firm       @relation(fields: [firmId], references: [id], onDelete: Cascade)
+}
+
+model GSTSummary {
+  id           String   @id @default(cuid())
+  firmId       String
+  clientId     String?
+  periodMonth  Int
+  periodYear   Int
+  invoiceType  String
+  taxableValue Decimal  @db.Decimal(18, 2)
+  cgst         Decimal  @db.Decimal(18, 2)
+  sgst         Decimal  @db.Decimal(18, 2)
+  igst         Decimal  @db.Decimal(18, 2)
+  totalGst     Decimal  @db.Decimal(18, 2)
+  invoiceValue Decimal  @db.Decimal(18, 2)
+  invoiceCount Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([firmId, periodYear, periodMonth])
+}
+
+model ActivityLog {
+  id          String    @id @default(cuid())
+  firmId      String
+  userId      String?
+  entityType  String
+  entityId    String
+  action      String
+  description String?
+  payload     Json?
+  createdAt   DateTime  @default(now())
+  firm        Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user        FirmUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([firmId, createdAt])
+}

@@ -8,7 +8,15 @@ async function main() {
 
   const firm = await prisma.firm.upsert({
     where: { email: "admin@talosledger.demo" },
-    update: {},
+    update: {
+      name: "Talos Ledger Demo CA",
+      ownerName: "Aarav Sharma",
+      phone: "+919876543210",
+      address: "Bandra Kurla Complex, Mumbai",
+      gstNumber: "27AAAAA0000A1Z5",
+      panNumber: "AAAAA0000A",
+      lowConfidenceThreshold: 0.5
+    },
     create: {
       name: "Talos Ledger Demo CA",
       ownerName: "Aarav Sharma",
@@ -17,29 +25,68 @@ async function main() {
       address: "Bandra Kurla Complex, Mumbai",
       gstNumber: "27AAAAA0000A1Z5",
       panNumber: "AAAAA0000A",
-      lowConfidenceThreshold: 0.5,
-      users: {
-        create: [
-          {
-            fullName: "Aarav Sharma",
-            email: "admin@talosledger.demo",
-            passwordHash,
-            role: UserRole.ADMIN
-          },
-          {
-            fullName: "Neha Jain",
-            email: "staff@talosledger.demo",
-            passwordHash,
-            role: UserRole.STAFF
-          }
-        ]
+      lowConfidenceThreshold: 0.5
+    }
+  });
+
+  await prisma.firmUser.upsert({
+    where: {
+      firmId_email: {
+        firmId: firm.id,
+        email: "admin@talosledger.demo"
       }
+    },
+    update: {
+      fullName: "Aarav Sharma",
+      passwordHash,
+      role: UserRole.ADMIN,
+      isActive: true
+    },
+    create: {
+      firmId: firm.id,
+      fullName: "Aarav Sharma",
+      email: "admin@talosledger.demo",
+      passwordHash,
+      role: UserRole.ADMIN
+    }
+  });
+
+  await prisma.firmUser.upsert({
+    where: {
+      firmId_email: {
+        firmId: firm.id,
+        email: "staff@talosledger.demo"
+      }
+    },
+    update: {
+      fullName: "Neha Jain",
+      passwordHash,
+      role: UserRole.STAFF,
+      isActive: true
+    },
+    create: {
+      firmId: firm.id,
+      fullName: "Neha Jain",
+      email: "staff@talosledger.demo",
+      passwordHash,
+      role: UserRole.STAFF
     }
   });
 
   const clientA = await prisma.client.upsert({
     where: { id: "client-demo-a" },
-    update: {},
+    update: {
+      firmId: firm.id,
+      businessName: "ABC Traders Pvt Ltd",
+      contactPersonName: "Rohan Mehta",
+      email: "accounts@abctraders.in",
+      phone: "+919900001111",
+      gstNumber: "27AABCT1234A1ZV",
+      panNumber: "AABCT1234A",
+      city: "Mumbai",
+      state: "Maharashtra",
+      status: ClientStatus.ACTIVE
+    },
     create: {
       id: "client-demo-a",
       firmId: firm.id,
@@ -52,6 +99,15 @@ async function main() {
       city: "Mumbai",
       state: "Maharashtra",
       status: ClientStatus.ACTIVE
+    }
+  });
+
+  await prisma.invoice.deleteMany({
+    where: {
+      firmId: firm.id,
+      fileName: {
+        in: ["invoice_sample_001.pdf", "logistics_bill_feb.pdf", "office_supplies_march.pdf"]
+      }
     }
   });
 
@@ -112,8 +168,7 @@ async function main() {
         status: InvoiceStatus.FAILED,
         extractionError: "Low quality scan. Retry with OCR fallback."
       }
-    ],
-    skipDuplicates: true
+    ]
   });
 }
 

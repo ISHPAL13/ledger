@@ -1,4 +1,6 @@
-import { AlertTriangle, CheckCircle2, RotateCcw } from "lucide-react";
+import { access } from "fs/promises";
+import path from "path";
+import { AlertTriangle, CheckCircle2, FileWarning, RotateCcw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   const totalMismatch =
     Math.abs(Number(invoice.taxableAmount || 0) + Number(invoice.totalGst || 0) + Number(invoice.roundOff || 0) - Number(invoice.grandTotal || 0)) > 1;
+  const previewPath = invoice.fileUrl.startsWith("/")
+    ? path.join(process.cwd(), "public", invoice.fileUrl.replace(/^\//, ""))
+    : null;
+  const previewAvailable = previewPath
+    ? await access(previewPath)
+        .then(() => true)
+        .catch(() => false)
+    : false;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -50,7 +60,17 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <Badge value={invoice.status} />
         </div>
         <div className="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50">
-          <iframe src={invoice.fileUrl} className="h-[900px] w-full bg-white" title={invoice.fileName} />
+          {previewAvailable ? (
+            <iframe src={invoice.fileUrl} className="h-[900px] w-full bg-white" title={invoice.fileName} />
+          ) : (
+            <div className="flex h-[900px] flex-col items-center justify-center gap-3 bg-white px-6 text-center">
+              <FileWarning className="h-10 w-10 text-amber-500" />
+              <div className="text-lg font-semibold text-slate-900">Preview unavailable</div>
+              <div className="max-w-md text-sm text-slate-500">
+                The PDF file for this invoice is missing from storage. Upload it again or replace the demo file to restore preview and extraction.
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 

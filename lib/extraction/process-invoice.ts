@@ -3,6 +3,7 @@ import path from "path";
 import { Decimal } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/db/prisma";
 import { extractInvoiceWithGemini, extractTextFromPdf } from "@/lib/extraction/gemini";
+import { normalizePublicFileUrl, resolveStoredFilePath } from "@/lib/storage/paths";
 
 function getMimeType(fileName: string) {
   const ext = path.extname(fileName).toLowerCase();
@@ -38,7 +39,7 @@ export async function processInvoiceById(invoiceId: string) {
 
   if (!invoice) throw new Error("Invoice not found");
 
-  const absolutePath = path.join(process.cwd(), "public", invoice.fileUrl.replace(/^\//, ""));
+  const absolutePath = resolveStoredFilePath(invoice.fileUrl);
   const buffer = await readFile(absolutePath);
   const mimeType = getMimeType(invoice.fileName || invoice.fileUrl);
   const extractedText = mimeType === "application/pdf" ? await extractTextFromPdf(buffer) : "";
@@ -67,6 +68,7 @@ export async function processInvoiceById(invoiceId: string) {
   await prisma.invoice.update({
     where: { id: invoiceId },
     data: {
+      fileUrl: normalizePublicFileUrl(invoice.fileUrl),
       status,
       vendorName: extraction.vendor_name,
       buyerName: extraction.buyer_name,

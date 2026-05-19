@@ -13,7 +13,9 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const clientId = String(formData.get("clientId") || "");
   const invoiceType = String(formData.get("invoiceType") || "PURCHASE");
-  const files = formData.getAll("files").filter((entry): entry is File => entry instanceof File);
+  const files = formData
+    .getAll("files")
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0 && entry.name.trim().length > 0);
   const maxUploadSize = Number(process.env.MAX_UPLOAD_SIZE_MB || 20) * 1024 * 1024;
 
   if (!clientId) return Response.json({ error: "Client is required" }, { status: 400 });
@@ -59,5 +61,9 @@ export async function POST(request: Request) {
     });
   }
 
-  return Response.json({ ok: true, count: createdInvoices.length });
+  return Response.json({
+    ok: true,
+    count: createdInvoices.length,
+    invoiceIds: createdInvoices.map((invoice) => invoice.id)
+  });
 }

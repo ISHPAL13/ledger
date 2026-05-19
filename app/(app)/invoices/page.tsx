@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -85,11 +86,12 @@ export default async function InvoicesPage({
       </form>
 
       <div className="mt-6 overflow-x-auto">
-        <table className="w-full min-w-[1250px] text-left text-sm">
+        <table className="w-full min-w-[1320px] text-left text-sm">
           <thead className="text-slate-500">
             <tr>
               <th className="pb-3">Client</th>
               <th className="pb-3">File / Invoice #</th>
+              <th className="pb-3">Preview</th>
               <th className="pb-3">Type</th>
               <th className="pb-3">Vendor</th>
               <th className="pb-3">Supplier GST</th>
@@ -103,7 +105,7 @@ export default async function InvoicesPage({
           <tbody>
             {invoices.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-20 text-center text-slate-500">
+                <td colSpan={11} className="py-20 text-center text-slate-500">
                   No invoices uploaded yet. Upload invoice PDFs to extract GST-ready data.
                 </td>
               </tr>
@@ -115,11 +117,20 @@ export default async function InvoicesPage({
                     <Link href={`/invoices/${invoice.id}`} className="font-medium text-slate-950 hover:text-brand-600">
                       {invoice.fileName}
                     </Link>
-                    <div className="mt-1 text-xs text-slate-400">{invoice.invoiceNumber || "—"}</div>
+                    <div className="mt-1 text-xs text-slate-400">{invoice.invoiceNumber || "-"}</div>
+                  </td>
+                  <td className="py-4">
+                    <Link
+                      href={`/invoices/${invoice.id}`}
+                      aria-label={`Preview ${invoice.fileName}`}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-brand-200 hover:text-brand-600"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Link>
                   </td>
                   <td className="py-4 text-slate-600">{invoice.invoiceType}</td>
-                  <td className="py-4 text-slate-600">{invoice.vendorName || "—"}</td>
-                  <td className="py-4 text-slate-600">{invoice.supplierGstNumber || "—"}</td>
+                  <td className="py-4 text-slate-600">{invoice.vendorName || "-"}</td>
+                  <td className="py-4 text-slate-600">{invoice.supplierGstNumber || "-"}</td>
                   <td className="py-4 text-slate-600">{formatDate(invoice.invoiceDate)}</td>
                   <td className="py-4 text-slate-600">{currency(Number(invoice.taxableAmount || 0))}</td>
                   <td className="py-4 text-slate-600">{currency(Number(invoice.totalGst || 0))}</td>

@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { normalizePublicFileUrl } from "@/lib/storage/paths";
 import { slugify } from "@/lib/utils";
 
 const uploadRoot = process.env.UPLOAD_DIR || "./public/uploads";
@@ -26,12 +27,12 @@ export async function saveInvoiceFile(params: {
 
   await writeFile(destination, params.buffer);
 
-  const relativePath = destination
+  const relativePath = path.resolve(destination)
     .replace(path.resolve("./public"), "")
     .replaceAll("\\", "/");
 
   return {
     filePath: destination,
-    publicUrl: relativePath.startsWith("/") ? relativePath : `/${relativePath}`
+    publicUrl: normalizePublicFileUrl(relativePath.startsWith("/") ? relativePath : `/${relativePath}`)
   };
 }

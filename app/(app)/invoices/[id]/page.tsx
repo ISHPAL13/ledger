@@ -12,6 +12,7 @@ import { deleteInvoiceAction, saveInvoiceReviewAction } from "@/lib/actions/invo
 import { requireUser } from "@/lib/auth/session";
 import { getInvoiceDetail } from "@/lib/data";
 import { prisma } from "@/lib/db/prisma";
+import { normalizePublicFileUrl, resolveStoredFilePath } from "@/lib/storage/paths";
 import { currency, percent, toInputDate } from "@/lib/utils";
 import { isValidGst } from "@/lib/validators";
 
@@ -46,9 +47,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   const totalMismatch =
     Math.abs(Number(invoice.taxableAmount || 0) + Number(invoice.totalGst || 0) + Number(invoice.roundOff || 0) - Number(invoice.grandTotal || 0)) > 1;
-  const previewPath = invoice.fileUrl.startsWith("/")
-    ? path.join(process.cwd(), "public", invoice.fileUrl.replace(/^\//, ""))
-    : null;
+  const previewUrl = normalizePublicFileUrl(invoice.fileUrl);
+  const previewPath = previewUrl.startsWith("/") ? resolveStoredFilePath(previewUrl) : null;
   const previewAvailable = previewPath
     ? await access(previewPath)
         .then(() => true)
@@ -71,7 +71,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             imagePreview ? (
               <div className="flex min-h-[900px] items-center justify-center bg-white p-4">
                 <Image
-                  src={invoice.fileUrl}
+                  src={previewUrl}
                   alt={invoice.fileName}
                   width={1200}
                   height={1600}
@@ -79,7 +79,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 />
               </div>
             ) : (
-              <iframe src={invoice.fileUrl} className="h-[900px] w-full bg-white" title={invoice.fileName} />
+              <iframe src={previewUrl} className="h-[900px] w-full bg-white" title={invoice.fileName} />
             )
           ) : (
             <div className="flex h-[900px] flex-col items-center justify-center gap-3 bg-white px-6 text-center">
